@@ -3,7 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Game Night Scoreboard</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Game Night">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='38' fill='%231a3a2a'/%3E%3Ccircle cx='90' cy='90' r='62' fill='%23224535' stroke='%23c9a84c' stroke-width='3'/%3E%3Ctext x='90' y='105' text-anchor='middle' font-size='72' font-family='serif'%3E🃏%3C/text%3E%3C/svg%3E">
+<title>Kimenai Game Night</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600&family=Courier+Prime:wght@400;700&display=swap');
 
@@ -609,12 +613,7 @@
 
       <div class="t31-loser-list" id="t31-loser-list"></div>
 
-      <div style="font-size:0.72rem;color:rgba(245,240,232,0.4);margin-bottom:8px">Lives to deduct:</div>
-      <div class="t31-life-stepper">
-        <button class="t31-step-btn" onclick="t31AdjLives(-1)">−</button>
-        <div class="t31-step-val" id="t31-lives-val">1</div>
-        <button class="t31-step-btn" onclick="t31AdjLives(1)">+</button>
-      </div>
+      <div style="font-size:0.72rem;color:rgba(245,240,232,0.4);margin-bottom:12px">Selected players each lose 1 life</div>
 
       <button class="btn-primary" id="t31-confirm-round" onclick="t31ConfirmRound()" disabled>Confirm Round</button>
     </div>
@@ -855,15 +854,15 @@ function f7Start() {
 }
 
 /* ── Round management ── */
-function f7StartRound() {
+function f7StartRound(startIdx) {
   f7.hands = {};
   f7.pendingAction = null;
   f7.pendingGiver  = null;
   f7.flip3ReturnToIdx = null;
   f7.players.forEach(function(p) {
-    f7.hands[p] = { numCards:[], actionCards:[], modCards:[], hasSC:false, status:'active' };
+    f7.hands[p] = { numCards:[], actionCards:[], modCards:[], hasSC:false, status:'active', flip3Left:0 };
   });
-  f7.viewIdx = 0;
+  f7.viewIdx = (startIdx !== undefined && startIdx >= 0) ? startIdx : 0;
   f7BuildSBHeader();
   f7Render();
 }
@@ -884,24 +883,29 @@ function f7DrawNum(val) {
   var alreadyHeld = h.numCards.indexOf(val) !== -1;
   if (alreadyHeld) {
     if (h.hasSC) {
-      // Second Chance saves them — discard SC and the dup
       h.hasSC = false;
       var scIdx = h.actionCards.indexOf('sc');
       if (scIdx !== -1) h.actionCards.splice(scIdx, 1);
+      // SC save counts as a draw for flip3
+      if (h.flip3Left > 0) { h.flip3Left--; }
+      if (h.flip3Left === 0) { f7Render(); f7NextPlayer(); return; }
       f7Render();
       return;
     }
-    // Bust — show the duplicate in red, wait for Next →
+    // Bust
     h.numCards.push(val);
     h.status = 'bust';
+    h.flip3Left = 0;
     f7Render();
     return;
   }
 
   h.numCards.push(val);
 
+  // Flip 7?
   if (handIsFlip7(h)) {
     h.status = 'flip7';
+    h.flip3Left = 0;
     f7.players.forEach(function(p) {
       if (f7.hands[p].status === 'active') f7.hands[p].status = 'round-ended';
     });
@@ -909,7 +913,21 @@ function f7DrawNum(val) {
     return;
   }
 
+  // Flip 3 in progress
+  if (h.flip3Left > 0) {
+    h.flip3Left--;
+    if (h.flip3Left === 0) {
+      f7Render();
+      f7NextPlayer();
+      return;
+    }
+    f7Render(); // still more forced draws
+    return;
+  }
+
+  // Normal draw — auto-advance
   f7Render();
+  f7NextPlayer();
 }
 
 function f7DrawMod(id) {
@@ -918,6 +936,7 @@ function f7DrawMod(id) {
   if (id === 'x2' && h.modCards.indexOf('x2') !== -1) return;
   h.modCards.push(id);
   f7Render();
+  f7NextPlayer();
 }
 
 function f7DrawAction(id) {
@@ -925,11 +944,13 @@ function f7DrawAction(id) {
   if (!handIsActive(h)) return;
 
   if (id === 'sc') {
-    if (h.hasSC) return; // already have one
+    if (h.hasSC) return;
     h.hasSC = true;
     h.actionCards.push('sc');
     f7Render();
+    f7NextPlayer();
   } else if (id === 'freeze' || id === 'flip3') {
+    // These need target selection — don't auto-advance
     f7.pendingAction = id;
     f7.pendingGiver  = f7CurrentName();
     f7Render();
@@ -957,10 +978,9 @@ function f7PickTarget(targetName) {
   } else if (action === 'flip3') {
     th.actionCards.push('flip3');
     if (targetName !== giverName) {
-      // Remember where to return after the recipient finishes their 3 cards
-      // That's the next active player after the giver
+      th.flip3Left = 3; // recipient must draw 3 cards before auto-advancing
       var giverIdx = f7.players.indexOf(giverName);
-      var returnIdx = giverIdx; // default: come back to giver's position for searching
+      var returnIdx = giverIdx;
       for (var i = 1; i <= f7.players.length; i++) {
         var ri = (giverIdx + i) % f7.players.length;
         if (f7.players[ri] !== targetName && handIsActive(f7.hands[f7.players[ri]])) {
@@ -969,6 +989,8 @@ function f7PickTarget(targetName) {
         }
       }
       f7.flip3ReturnToIdx = returnIdx;
+    } else {
+      th.flip3Left = 3; // giving to yourself — still must draw 3
     }
     f7.viewIdx = f7.players.indexOf(targetName);
     f7Render();
@@ -1033,30 +1055,29 @@ function f7Undo() {
 /* ── Confirm round ── */
 function f7ConfirmRound() {
   var entry = { round: f7.round, scores: {} };
+  var roundWinner = null;
+  var roundHigh = -1;
+
   f7.players.forEach(function(p) {
     var h = f7.hands[p];
-    var earned = 0;
-    if (h.status === 'bust' || h.status === 'round-ended') {
-      earned = 0;
-    } else {
-      // active, stopped, freeze, flip7 — all score their current hand
-      earned = handCalcScore(h);
-    }
+    var earned = (h.status === 'bust' || h.status === 'round-ended') ? 0 : handCalcScore(h);
     f7.totalScores[p] = (f7.totalScores[p]||0) + earned;
     entry.scores[p] = { status: h.status, earned: earned };
+    if (earned > roundHigh) { roundHigh = earned; roundWinner = p; }
   });
+
   f7.history.push(entry);
   f7.round++;
-
   f7BuildSBHeader();
   f7RenderSB();
 
-  // Check winner
   var maxScore = Math.max.apply(null, f7.players.map(function(p){ return f7.totalScores[p]; }));
   var winners  = f7.players.filter(function(p){ return f7.totalScores[p] >= 200 && f7.totalScores[p] === maxScore; });
   if (winners.length === 1) { f7ShowEnd(winners[0]); return; }
 
-  f7StartRound();
+  // Start next round on the player with the highest score this round
+  var startIdx = roundWinner ? f7.players.indexOf(roundWinner) : 0;
+  f7StartRound(startIdx);
 }
 
 /* ── Rendering ── */
@@ -1657,42 +1678,36 @@ function t31AdjLives(delta) {
 function t31ConfirmRound() {
   if (t31.selectedLosers.length === 0) return;
 
-  // Pass 1: deduct lives from all selected losers
+  // Deduct 1 life from each selected loser
   t31.selectedLosers.forEach(function(p) {
     if (t31.out[p]) return;
-    t31.lives[p] -= t31.livesToDeduct;
+    t31.lives[p] -= 1;
   });
 
-  // Pass 2: find all who hit 0 or below simultaneously
+  // Find all who hit 0 simultaneously
   var hitZero = t31.selectedLosers.filter(function(p) {
     return !t31.out[p] && t31.lives[p] <= 0;
   });
 
   hitZero.forEach(function(p) {
     if (t31.hasSnoepje[p]) {
-      // Already had the snoepje — lose it, go out
       t31.hasSnoepje[p] = false;
       t31.lives[p] = 0;
       t31.out[p] = true;
     } else if (!t31.snoepjeGiven) {
-      // Snoepje not yet given — give it (handles multiple simultaneous: all get one)
       t31.hasSnoepje[p] = true;
       t31.lives[p] = 1;
-      // Don't set snoepjeGiven = true yet; loop gives it to all simultaneous losers
     } else {
-      // Snoepje already taken by someone else — out
       t31.lives[p] = 0;
       t31.out[p] = true;
     }
   });
 
-  // Mark snoepje as given if any player received one this round
   if (hitZero.some(function(p){ return t31.hasSnoepje[p]; })) {
     t31.snoepjeGiven = true;
   }
 
   t31.selectedLosers = [];
-  t31.livesToDeduct = 1;
   t31.round++;
 
   var active = t31ActivePlayers();
@@ -1758,8 +1773,6 @@ function t31RenderGrid() {
 }
 
 function t31RenderPanel() {
-  document.getElementById('t31-lives-val').textContent = t31.livesToDeduct;
-
   var list = document.getElementById('t31-loser-list');
   list.innerHTML = '';
   t31.players.forEach(function(p, i) {
