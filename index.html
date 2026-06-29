@@ -596,18 +596,13 @@
       <button class="btn-add" onclick="ytzAddPlayer()">+ Add player</button>
     </div>
     <button class="btn-primary" onclick="ytzStart()">Start Game</button>
-    <p class="hint">1–6 players · tap any cell to enter a score</p>
+    <p class="hint">1–6 players · drag to reorder · tap any cell to enter a score</p>
   </div>
 
   <div id="ytz-game" class="hidden">
-    <div class="ytz-topbar">
-      <div class="ytz-active-pill">
-        <div class="lbl">Entering scores for</div>
-        <div class="name" id="ytz-cur-name"></div>
-      </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;margin-top:2px">
       <button class="btn-ghost" onclick="ytzResetGame()" style="border:1px solid var(--felt-border);padding:7px 10px;border-radius:7px;">New game</button>
     </div>
-    <p class="hint" style="margin-bottom:8px">Tap any empty cell to enter a score</p>
     <div class="ytz-scorecard"><table id="ytz-table"></table></div>
     <button class="btn-primary" style="margin-top:12px" onclick="ytzCheckEnd()">Show Final Scores</button>
   </div>
@@ -1465,17 +1460,90 @@ function ytzInitSetup() {
   ytz.players = DEFAULT_PLAYERS.slice();
   ytzRebuildSetup();
 }
+
+var ytzDrag = { active: false };
+
 function ytzRebuildSetup() {
   var list = document.getElementById('ytz-player-list');
   list.innerHTML = '';
   ytz.players.forEach(function(name, i) {
     var row = document.createElement('div');
     row.className = 'player-row';
-    row.innerHTML = '<span class="p-dot" style="background:'+COLOURS[i%8]+'"></span>' +
+    row.dataset.idx = i;
+    row.innerHTML =
+      '<span class="drag-handle">⠿</span>' +
+      '<span class="p-dot" style="background:'+COLOURS[i%8]+'"></span>' +
       '<input class="player-input" type="text" value="'+name+'" oninput="ytz.players['+i+']=this.value" placeholder="Player '+(i+1)+'">' +
       '<button class="btn-remove" onclick="ytzRemovePlayer('+i+')">✕</button>';
     list.appendChild(row);
   });
+
+  list.querySelectorAll('.drag-handle').forEach(function(handle) {
+    handle.addEventListener('touchstart', ytzTouchStart, { passive: false });
+  });
+}
+
+function ytzTouchStart(e) {
+  e.preventDefault();
+  var handle = e.currentTarget;
+  var row    = handle.parentElement;
+  var list   = document.getElementById('ytz-player-list');
+  var rows   = Array.prototype.slice.call(list.querySelectorAll('.player-row'));
+  var fromIdx = parseInt(row.dataset.idx);
+  var touch  = e.touches[0];
+
+  list.querySelectorAll('.player-input').forEach(function(inp, i) { ytz.players[i] = inp.value.trim() || 'Player'; });
+
+  var ghost = row.cloneNode(true);
+  var rect  = row.getBoundingClientRect();
+  ghost.style.cssText = 'position:fixed;left:'+rect.left+'px;top:'+rect.top+'px;width:'+rect.width+'px;opacity:0.85;z-index:999;pointer-events:none;background:var(--felt-light);border:2px solid var(--gold);border-radius:11px;';
+  document.body.appendChild(ghost);
+  row.style.opacity = '0.3';
+
+  ytzDrag = { active: true, fromIdx: fromIdx, ghost: ghost, dragRow: row,
+              offsetY: touch.clientY - rect.top, rows: rows, list: list };
+
+  document.addEventListener('touchmove', ytzTouchMove, { passive: false });
+  document.addEventListener('touchend',  ytzTouchEnd);
+}
+
+function ytzTouchMove(e) {
+  if (!ytzDrag.active) return;
+  e.preventDefault();
+  var touch = e.touches[0];
+  ytzDrag.ghost.style.top = (touch.clientY - ytzDrag.offsetY) + 'px';
+  ytzDrag.rows.forEach(function(r) { r.style.borderColor = ''; });
+  ytzDrag.rows.forEach(function(r, ri) {
+    var rect = r.getBoundingClientRect();
+    if (touch.clientY >= rect.top && touch.clientY <= rect.bottom && ri !== ytzDrag.fromIdx) {
+      r.style.borderColor = 'var(--gold)';
+    }
+  });
+}
+
+function ytzTouchEnd(e) {
+  if (!ytzDrag.active) return;
+  document.removeEventListener('touchmove', ytzTouchMove);
+  document.removeEventListener('touchend',  ytzTouchEnd);
+
+  var touch = e.changedTouches[0];
+  ytzDrag.ghost.remove();
+  ytzDrag.dragRow.style.opacity = '';
+  ytzDrag.rows.forEach(function(r) { r.style.borderColor = ''; });
+
+  var toIdx = ytzDrag.fromIdx;
+  ytzDrag.rows.forEach(function(r, ri) {
+    var rect = r.getBoundingClientRect();
+    if (touch.clientY >= rect.top && touch.clientY <= rect.bottom) { toIdx = ri; }
+  });
+
+  if (toIdx !== ytzDrag.fromIdx) {
+    var moved = ytz.players.splice(ytzDrag.fromIdx, 1)[0];
+    ytz.players.splice(toIdx, 0, moved);
+  }
+
+  ytzDrag.active = false;
+  ytzRebuildSetup();
 }
 function ytzAddPlayer() { if (ytz.players.length < 6) { ytz.players.push('Player '+(ytz.players.length+1)); ytzRebuildSetup(); } }
 function ytzRemovePlayer(i) { if (ytz.players.length > 1) { ytz.players.splice(i,1); ytzRebuildSetup(); } }
@@ -1493,7 +1561,6 @@ function ytzStart() {
   document.getElementById('ytz-setup').classList.add('hidden');
   document.getElementById('ytz-end').classList.add('hidden');
   document.getElementById('ytz-game').classList.remove('hidden');
-  document.getElementById('ytz-cur-name').textContent = ytz.players[0];
   ytzBuildTable();
 }
 
@@ -1536,12 +1603,10 @@ function ytzCellTap(catId, pi) {
   var p = ytz.players[pi];
   // Allow tapping filled cells to correct them
   ytz.activePi = pi;
-  document.getElementById('ytz-cur-name').textContent = p;
   ytzOpenModal(catId, pi, false);
 }
 function ytzBonusTap(pi) {
   ytz.activePi = pi;
-  document.getElementById('ytz-cur-name').textContent = ytz.players[pi];
   ytzOpenModal('yahtzee', pi, true);
 }
 
@@ -1573,12 +1638,13 @@ function ytzOpenModal(catId, pi, isBonus) {
   else { for (var v=5;v<=30;v++) vals.push(v); }
 
   // Single-option categories: commit immediately if empty, show modal if filled (to allow clearing)
+  // But always show modal so Score 0 / strike-out is accessible
   if (vals.length === 1 && !isBonus) {
     if (currentVal === null) {
-      ytzCommit(vals[0]);
-      return;
+      // Show modal with just the one option + Score 0 (strike out)
+      // Don't auto-commit — let them choose between the value or a strike-out
     }
-    // Already filled — fall through to show modal with clear option
+    // Fall through to show modal in all cases
   }
 
   // Multi-option: each button commits immediately on tap
@@ -1594,13 +1660,13 @@ function ytzOpenModal(catId, pi, isBonus) {
   document.getElementById('m-confirm').disabled = true;
   document.getElementById('m-confirm').style.display = 'none';
 
-  // Show clear button only if cell already has a value
+  // Score 0 / strike-out always available; becomes Clear if already filled
   var clearBtn = document.getElementById('m-score-zero');
   if (currentVal !== null && !isBonus) {
     clearBtn.textContent = 'Clear score';
     clearBtn.onclick = function() { ytzClearScore(catId, pi); };
   } else {
-    clearBtn.textContent = 'Score 0';
+    clearBtn.textContent = 'Strike out (0)';
     clearBtn.onclick = function() { ytzCommit(0); };
   }
 
@@ -1617,13 +1683,18 @@ function ytzClearScore(catId, pi) {
 function ytzCommitSelected() { if (mState.val !== null) ytzCommit(mState.val); }
 function ytzCommit(val) {
   var p = ytz.players[mState.pi];
-  if (mState.bonus) { ytz.scores[p].yahtzee_bonus = (ytz.scores[p].yahtzee_bonus||0)+val; }
-  else { ytz.scores[p][mState.catId] = val; }
+  if (mState.bonus) {
+    ytz.scores[p].yahtzee_bonus = (ytz.scores[p].yahtzee_bonus||0) + val;
+  } else {
+    ytz.scores[p][mState.catId] = val;
+    // Striking out Yahtzee at 0 also blocks the bonus row
+    if (mState.catId === 'yahtzee' && val === 0) {
+      ytz.scores[p].yahtzee_bonus = 0;
+    }
+  }
   ytzCloseModal();
   ytzRefresh();
   ytz.activePi = (mState.pi+1) % ytz.players.length;
-  document.getElementById('ytz-cur-name').textContent = ytz.players[ytz.activePi];
-  // Restore confirm button visibility for next open
   document.getElementById('m-confirm').style.display = '';
 }
 function ytzCloseModal() {
@@ -1651,8 +1722,20 @@ function ytzRefresh() {
     var up=ytzUpperTotal(p);
     var bCell=document.getElementById('sc-bonus-'+pi); if(bCell){bCell.textContent=up>=63?'+35':up+'/63';bCell.style.color=up>=63?'var(--green)':'';}
     var uCell=document.getElementById('sc-uptot-'+pi); if(uCell) uCell.textContent=up;
-    var yb=ytz.scores[p].yahtzee_bonus||0;
-    var ybCell=document.getElementById('sc-ybonus-'+pi); if(ybCell) ybCell.textContent=yb>0?'+'+yb:'';
+    var yb = ytz.scores[p].yahtzee_bonus || 0;
+    var yahtzeeStruck = ytz.scores[p]['yahtzee'] === 0;
+    var ybCell = document.getElementById('sc-ybonus-'+pi);
+    if (ybCell) {
+      if (yahtzeeStruck) {
+        ybCell.textContent = '✗';
+        ybCell.style.color = 'rgba(0,0,0,0.2)';
+        ybCell.onclick = null; // can't tap when struck out
+      } else {
+        ybCell.textContent = yb > 0 ? '+'+yb : '';
+        ybCell.style.color = '';
+        ybCell.onclick = function(){ ytzBonusTap(pi); };
+      }
+    }
     var gCell=document.getElementById('sc-grand-'+pi); if(gCell) gCell.textContent=ytzGrandTotal(p);
   });
 }
