@@ -1686,16 +1686,16 @@ ytzInitSetup();
    Each player starts with 3 lives (shown as red dots).
    At end of each round, one or more losers are selected
    and lose the chosen number of lives.
-   Losing your 3rd life earns you a snoepje (one extra life, shown in gold).
-   Only one snoepje exists — first player to 0 lives gets it if unclaimed.
-   Once a player loses the snoepje life they're out.
+   Losing your 3rd life earns you a snoepke (one extra life, shown in gold).
+   Only one snoepke exists — first player to 0 lives gets it if unclaimed.
+   Once a player loses the snoepke life they're out.
    Last player standing wins.
 */
 
 var t31 = {
   players: [],
   lives: {},       // name -> current lives remaining (0 = out unless has snoepje)
-  hasSnoepje: {},  // name -> bool
+  hasSnoepke: {},  // name -> bool
   snoepjeGiven: false,
   out: {},         // name -> bool
   round: 1,
@@ -1740,13 +1740,13 @@ function t31Start() {
   t31.players = Array.prototype.map.call(inputs, function(inp){ return inp.value.trim()||'Player'; });
   if (t31.players.length < 2) { alert('Add at least 2 players.'); return; }
   t31.lives = {};
-  t31.hasSnoepje = {};
+  t31.hasSnoepke = {};
   t31.out = {};
   t31.snoepjeGiven = false;
   t31.round = 1;
   t31.selectedLosers = [];
   t31.livesToDeduct = 1;
-  t31.players.forEach(function(p) { t31.lives[p] = 3; t31.hasSnoepje[p] = false; t31.out[p] = false; });
+  t31.players.forEach(function(p) { t31.lives[p] = 3; t31.hasSnoepke[p] = false; t31.out[p] = false; });
   document.getElementById('t31-setup').classList.add('hidden');
   document.getElementById('t31-winner').classList.add('hidden');
   document.getElementById('t31-game').classList.remove('hidden');
@@ -1784,12 +1784,12 @@ function t31ConfirmRound() {
   });
 
   hitZero.forEach(function(p) {
-    if (t31.hasSnoepje[p]) {
-      t31.hasSnoepje[p] = false;
+    if (t31.hasSnoepke[p]) {
+      t31.hasSnoepke[p] = false;
       t31.lives[p] = 0;
       t31.out[p] = true;
     } else if (!t31.snoepjeGiven) {
-      t31.hasSnoepje[p] = true;
+      t31.hasSnoepke[p] = true;
       t31.lives[p] = 1;
     } else {
       t31.lives[p] = 0;
@@ -1797,7 +1797,7 @@ function t31ConfirmRound() {
     }
   });
 
-  if (hitZero.some(function(p){ return t31.hasSnoepje[p]; })) {
+  if (hitZero.some(function(p){ return t31.hasSnoepke[p]; })) {
     t31.snoepjeGiven = true;
   }
 
@@ -1831,7 +1831,7 @@ function t31RenderGrid() {
   grid.innerHTML = '';
   t31.players.forEach(function(p, i) {
     var isOut  = t31.out[p];
-    var hasSnp = t31.hasSnoepje[p];
+    var hasSnp = t31.hasSnoepke[p];
     var lives  = t31.lives[p];
     var card   = document.createElement('div');
     var cls    = 't31-player-card';
@@ -1844,11 +1844,11 @@ function t31RenderGrid() {
     // 3 base lives
     for (var d = 0; d < 3; d++) {
       var filled = !isOut && (hasSnp ? true : d < lives); // if snoepje, base lives always shown as full? No:
-      // Actually track simply: if hasSnoepje, they have 1 life (the snoepje), base are gone
+      // Actually track simply: if hasSnoepke, they have 1 life (the snoepke), base are gone
       var baseLife = hasSnp ? false : (d < lives);
       dotsHtml += '<div class="t31-life'+(baseLife?'':' lost')+'"></div>';
     }
-    // Snoepje slot
+    // Snoepke slot
     if (hasSnp) {
       dotsHtml += '<div class="t31-life snoepje">🍬</div>';
     }
@@ -1856,8 +1856,8 @@ function t31RenderGrid() {
 
     var statusHtml = '';
     if (isOut) statusHtml = '<div class="t31-status out-txt">Out</div>';
-    else if (hasSnp) statusHtml = '<div class="t31-status snp-txt">Snoepje!</div>';
-    else statusHtml = '<div class="t31-status">'+lives+' life'+(lives!==1?'s':'')+' left</div>';
+    else if (hasSnp) statusHtml = '<div class="t31-status snp-txt">Snoepke!</div>';
+    else statusHtml = '<div class="t31-status">'+(lives===1?'1 life':''+lives+' lives')+' left</div>';
 
     card.innerHTML =
       '<div class="t31-pname"><span class="cdot" style="background:'+COLOURS[i%8]+'"></span>'+p+'</div>' +
@@ -1876,8 +1876,8 @@ function t31RenderPanel() {
     btn.className = 't31-loser-btn' + (isSelected ? ' selected' : '');
     btn.innerHTML =
       '<span><span class="cdot" style="background:'+COLOURS[i%8]+'"></span>'+p+'</span>' +
-      '<span style="font-size:0.75rem;opacity:0.5">'+t31.lives[p]+' life'+(t31.lives[p]!==1?'s':'')+
-      (t31.hasSnoepje[p]?' 🍬':'')+' left</span>';
+      '<span style="font-size:0.75rem;opacity:0.5">'+(t31.lives[p]===1?'1 life':t31.lives[p]+' lives')+
+      (t31.hasSnoepke[p]?' 🍬':'')+' left</span>';
     btn.addEventListener('click', (function(name){ return function(){ t31ToggleLoser(name); }; })(p));
     list.appendChild(btn);
   });
