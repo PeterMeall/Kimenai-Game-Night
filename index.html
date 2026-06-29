@@ -365,7 +365,8 @@
   .ytz-section-hdr td { background: #2c3e50; color: var(--gold-light); font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; padding: 5px 11px; }
   .ytz-row td:first-child { padding: 7px 6px 7px 11px; font-size: 0.72rem; color: var(--text-dark); font-weight: 500; min-width: 95px; }
   .score-cell { text-align: center; width: 40px; min-width: 40px; font-family: 'Courier Prime', monospace; font-size: 0.88rem; font-weight: 700; color: var(--text-dark); background: white; cursor: pointer; }
-  .score-cell.filled  { background: #f9f7f2; }
+  .score-cell.filled  { background: #f9f7f2; cursor: pointer; }
+  .score-cell.filled:active { background: #ede8db; }
   .score-cell.zero    { color: rgba(0,0,0,0.22); }
   .score-cell.cur-col { background: #fffbe6; }
   .ytz-bonus-row td:first-child { font-size: 0.66rem; color: var(--text-mid); padding: 5px 6px 5px 11px; font-style: italic; background: #f5f0e8; }
@@ -628,7 +629,7 @@
     <div class="modal-hint" id="m-hint"></div>
     <div class="score-btns" id="m-btns"></div>
     <div class="modal-actions">
-      <button class="btn-score-zero"   onclick="ytzCommit(0)">Score 0</button>
+      <button class="btn-score-zero" id="m-score-zero" onclick="ytzCommit(0)">Score 0</button>
       <button class="btn-confirm" id="m-confirm" onclick="ytzCommitSelected()" disabled>Confirm</button>
       <button class="btn-modal-cancel" onclick="ytzCloseModal()">Cancel</button>
     </div>
@@ -1533,7 +1534,7 @@ function ytzBuildTable() {
 
 function ytzCellTap(catId, pi) {
   var p = ytz.players[pi];
-  if (ytz.scores[p][catId] !== null) return;
+  // Allow tapping filled cells to correct them
   ytz.activePi = pi;
   document.getElementById('ytz-cur-name').textContent = p;
   ytzOpenModal(catId, pi, false);
@@ -1546,17 +1547,22 @@ function ytzBonusTap(pi) {
 
 function ytzOpenModal(catId, pi, isBonus) {
   var cat = YTZ_CATS.find(function(c){ return c.id === catId; });
+  var p = ytz.players[pi];
+  var currentVal = isBonus ? null : ytz.scores[p][catId];
   mState = { catId: catId, pi: pi, bonus: isBonus, val: null };
+
   document.getElementById('m-cat').textContent    = isBonus ? 'Yahtzee Bonus' : cat.label;
-  document.getElementById('m-player').textContent = ytz.players[pi];
+  document.getElementById('m-player').textContent = p;
   document.getElementById('m-hint').textContent   = isBonus ? 'Each extra Yahtzee = +100.' : cat.hint;
+
   var btnsEl = document.getElementById('m-btns');
   btnsEl.innerHTML = '';
+
   var vals = [];
-  if (isBonus)            vals = [100,200,300,400,500];
-  else if (catId==='fh')  vals = [25];
-  else if (catId==='ss')  vals = [30];
-  else if (catId==='ls')  vals = [40];
+  if (isBonus)             vals = [100,200,300,400,500];
+  else if (catId==='fh')   vals = [25];
+  else if (catId==='ss')   vals = [30];
+  else if (catId==='ls')   vals = [40];
   else if (catId==='yahtzee') vals = [50];
   else if (catId==='ones')    vals = [1,2,3,4,5];
   else if (catId==='twos')    vals = [2,4,6,8,10];
@@ -1565,21 +1571,49 @@ function ytzOpenModal(catId, pi, isBonus) {
   else if (catId==='fives')   vals = [5,10,15,20,25];
   else if (catId==='sixes')   vals = [6,12,18,24,30];
   else { for (var v=5;v<=30;v++) vals.push(v); }
+
+  // Single-option categories: commit immediately if empty, show modal if filled (to allow clearing)
+  if (vals.length === 1 && !isBonus) {
+    if (currentVal === null) {
+      ytzCommit(vals[0]);
+      return;
+    }
+    // Already filled — fall through to show modal with clear option
+  }
+
+  // Multi-option: each button commits immediately on tap
   vals.forEach(function(v) {
     var btn = document.createElement('button');
-    btn.className = 'score-btn';
+    btn.className = 'score-btn' + (v === currentVal ? ' sel' : '');
     btn.textContent = v;
-    btn.addEventListener('click', (function(val){ return function(){
-      document.querySelectorAll('.score-btn').forEach(function(b){ b.classList.remove('sel'); });
-      btn.classList.add('sel');
-      mState.val = val;
-      document.getElementById('m-confirm').disabled = false;
-    }; })(v));
+    btn.addEventListener('click', (function(val){ return function(){ ytzCommit(val); }; })(v));
     btnsEl.appendChild(btn);
   });
+
+  // Show confirm button as disabled (not needed) and update clear/cancel buttons
   document.getElementById('m-confirm').disabled = true;
+  document.getElementById('m-confirm').style.display = 'none';
+
+  // Show clear button only if cell already has a value
+  var clearBtn = document.getElementById('m-score-zero');
+  if (currentVal !== null && !isBonus) {
+    clearBtn.textContent = 'Clear score';
+    clearBtn.onclick = function() { ytzClearScore(catId, pi); };
+  } else {
+    clearBtn.textContent = 'Score 0';
+    clearBtn.onclick = function() { ytzCommit(0); };
+  }
+
   document.getElementById('ytz-modal').classList.add('open');
 }
+
+function ytzClearScore(catId, pi) {
+  var p = ytz.players[pi];
+  ytz.scores[p][catId] = null;
+  ytzCloseModal();
+  ytzRefresh();
+}
+
 function ytzCommitSelected() { if (mState.val !== null) ytzCommit(mState.val); }
 function ytzCommit(val) {
   var p = ytz.players[mState.pi];
@@ -1589,8 +1623,14 @@ function ytzCommit(val) {
   ytzRefresh();
   ytz.activePi = (mState.pi+1) % ytz.players.length;
   document.getElementById('ytz-cur-name').textContent = ytz.players[ytz.activePi];
+  // Restore confirm button visibility for next open
+  document.getElementById('m-confirm').style.display = '';
 }
-function ytzCloseModal() { document.getElementById('ytz-modal').classList.remove('open'); mState={catId:null,pi:null,bonus:false,val:null}; }
+function ytzCloseModal() {
+  document.getElementById('ytz-modal').classList.remove('open');
+  document.getElementById('m-confirm').style.display = '';
+  mState={catId:null,pi:null,bonus:false,val:null};
+}
 
 function ytzUpperTotal(p) { return ['ones','twos','threes','fours','fives','sixes'].reduce(function(s,id){ return s+(ytz.scores[p][id]||0); },0); }
 function ytzGrandTotal(p) {
