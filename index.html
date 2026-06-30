@@ -481,6 +481,92 @@
   .t31-trophy { font-size: 3rem; margin-bottom: 8px; }
 
   .cdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+
+  /* ══════════════════════════════════════
+     iPAD LANDSCAPE (768px+)
+  ══════════════════════════════════════ */
+  @media (min-width: 768px) {
+
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+
+    .header {
+      padding: 14px 32px;
+      display: flex; align-items: center; gap: 16px;
+      justify-content: space-between;
+    }
+    .header h1 { font-size: 1.5rem; }
+    .header p  { margin-top: 0; }
+
+    .game-tabs {
+      max-width: none; margin: 0;
+      padding: 10px 32px;
+      gap: 12px;
+      border-bottom: 1px solid var(--felt-border);
+    }
+    .tab-btn { padding: 10px 20px; font-size: 0.9rem; }
+
+    /* All views: wider, more padding */
+    .view { max-width: none; padding: 20px 32px 40px; }
+
+    /* ── FLIP 7 iPad layout ── */
+    #f7-game {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      grid-template-rows: auto;
+      gap: 0 20px;
+      align-items: start;
+    }
+    .f7-topbar { grid-column: 1 / -1; }
+    .f7-player-tabs { grid-column: 1 / -1; }
+    #f7-turn-panel { grid-column: 1; grid-row: 3; }
+    .f7-scoreboard { grid-column: 2; grid-row: 3; position: sticky; top: 20px; }
+
+    /* Bigger card grid on iPad */
+    .num-grid { grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .num-btn  { min-height: 52px; font-size: 1rem; }
+    .action-grid { gap: 7px; }
+    .action-btn  { min-height: 46px; font-size: 0.85rem; padding: 10px 14px; }
+
+    /* ── YAHTZEE iPad layout ── */
+    #ytz-game { max-width: 900px; margin: 0 auto; }
+    .ytz-scorecard colgroup col:first-child { width: 32%; }
+    .ytz-head th { font-size: 0.9rem; padding: 11px 8px; }
+    .ytz-row td:first-child { font-size: 0.82rem; padding: 9px 10px 9px 14px; }
+    .score-cell { font-size: 1.1rem; padding: 11px 4px; }
+    .ytz-bonus-row td:first-child { font-size: 0.75rem; padding: 7px 10px 7px 14px; }
+    .ytz-bonus-row .score-cell { font-size: 0.9rem; }
+    .ytz-total-row td:first-child { font-size: 0.9rem; padding: 10px 10px 10px 14px; }
+    .ytz-total-row .score-cell { font-size: 1.15rem; }
+    .ytz-section-hdr td { font-size: 0.68rem; padding: 6px 14px; }
+    #ytz-game > div:first-child { margin-bottom: 14px; }
+
+    /* ── 31 iPad layout ── */
+    #t31-game { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+    .f7-topbar.t31bar { grid-column: 1 / -1; }
+    #t31-grid { grid-column: 1; grid-template-columns: repeat(3, 1fr); }
+    .t31-round-panel { grid-column: 2; grid-row: 2; position: sticky; top: 20px; }
+    .t31-player-card { padding: 16px 14px; }
+    .t31-life { width: 26px; height: 26px; }
+
+    /* Bigger touch targets generally */
+    .btn-primary { padding: 16px; font-size: 1.1rem; }
+    .btn-next-player { padding: 16px; font-size: 1.05rem; }
+    .btn-end-round { padding: 16px; font-size: 1.05rem; }
+    .btn-stop { font-size: 0.9rem; padding: 14px 10px; }
+    .btn-undo { padding: 14px 16px; }
+
+    /* Setup screens — centred narrower column */
+    #f7-setup, #ytz-setup, #t31-setup {
+      max-width: 480px; margin: 0 auto; padding-top: 20px;
+    }
+
+    /* Modals — not bottom sheet on iPad, centred instead */
+    .modal-overlay { align-items: center; }
+    .modal { border-radius: 16px; max-width: 480px; padding: 28px 24px 32px; }
+
+    /* Score buttons in modal — bigger */
+    .score-btn { padding: 14px 4px; font-size: 1rem; min-height: 52px; }
+  }
 </style>
 </head>
 <body>
@@ -648,7 +734,7 @@
 
   <!-- Game -->
   <div id="t31-game" class="hidden">
-    <div class="f7-topbar" style="margin-bottom:12px">
+    <div class="f7-topbar t31bar" style="margin-bottom:12px">
       <span>Round <span class="rnd" id="t31-rnd">1</span></span>
       <span id="t31-topbar-sub" style="color:rgba(245,240,232,0.4)"></span>
       <button class="btn-ghost" onclick="t31ResetGame()">New game</button>
