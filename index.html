@@ -511,7 +511,7 @@
     /* ── FLIP 7 iPad layout ── */
     #f7-game {
       display: grid;
-      grid-template-columns: 360px 1fr;
+      grid-template-columns: 1fr 280px;
       grid-template-rows: auto;
       gap: 0 20px;
       align-items: start;
@@ -522,10 +522,15 @@
     .f7-scoreboard { grid-column: 2; grid-row: 3; position: sticky; top: 20px; }
 
     /* Bigger card grid on iPad */
-    .num-grid { grid-template-columns: repeat(7, 1fr); gap: 6px; }
-    .num-btn  { min-height: 52px; font-size: 1rem; }
-    .action-grid { gap: 7px; }
-    .action-btn  { min-height: 46px; font-size: 0.85rem; padding: 10px 14px; }
+    .num-grid { grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 12px; }
+    .num-btn  { min-height: 64px; font-size: 1.1rem; border-radius: 10px; }
+    .num-btn .card-count { font-size: 0.6rem; }
+    .action-grid { gap: 9px; }
+    .action-btn  { min-height: 54px; font-size: 0.9rem; padding: 12px 16px; border-radius: 10px; }
+    .f7-big-score { font-size: 3.5rem; }
+    .f7-hand { gap: 7px; min-height: 60px; }
+    .chip-num { width: 46px; height: 62px; font-size: 1.2rem; border-radius: 8px; }
+    .f7-turn-panel { padding: 20px 18px; }
 
     /* ── YAHTZEE iPad layout ── */
     #ytz-game { max-width: 900px; margin: 0 auto; }
