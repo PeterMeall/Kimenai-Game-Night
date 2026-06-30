@@ -9,6 +9,13 @@
 <link rel="apple-touch-icon" id="app-icon">
 <title>Kimenai Game Night</title>
 <script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/Kimenai-Game-Night/sw.js');
+  });
+}
+</script>
+<script>
 (function() {
   var c = document.createElement('canvas');
   c.width = 180; c.height = 180;
