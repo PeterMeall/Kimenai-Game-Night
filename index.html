@@ -1445,10 +1445,10 @@ function f7Render() {
     var btn = document.createElement('button');
     btn.className = 'action-btn '+card.cls;
     btn.textContent = card.label;
-    // Hide Freeze and Flip Three in per-round mode
-    if (f7.mode === 'round' && (card.id === 'freeze' || card.id === 'flip3')) {
-      btn.style.display = 'none';
-    }
+    // Hide Freeze, Flip Three and Second Chance in per-round mode
+      if (f7.mode === 'round' && (card.id === 'freeze' || card.id === 'flip3' || card.id === 'sc')) {
+        btn.style.display = 'none';
+      }
     var dis = isDone || (card.id==='sc' && h.hasSC);
     btn.disabled = dis;
     btn.addEventListener('click', (function(id){ return function(){ f7DrawAction(id); }; })(card.id));
