@@ -207,26 +207,19 @@ if ('serviceWorker' in navigator) {
   .f7-hand { display: flex; flex-wrap: wrap; gap: 5px; min-height: 42px; }
 
   /* ── FLIP 7 CARD CHIPS ── */
-  /* Each number card has its own colour matching the real game */
   .chip {
     display: flex; align-items: center; justify-content: center;
-    border-radius: 6px; flex-shrink: 0; position: relative;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+    flex-direction: column;
+    border-radius: 7px; flex-shrink: 0; position: relative;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.45);
   }
 
-  /* Number cards — parchment style with coloured number and double border */
+  /* Number cards */
   .chip-num {
-    width: 40px; height: 54px;
+    width: 42px; height: 56px;
     background: #f5eedc;
-    border: 2px solid #c8b97a;
-    border-radius: 7px;
-    font-family: 'Lilita One', cursive;
-    font-size: 1.3rem;
-    flex-direction: column;
-    outline: 3px solid rgba(255,255,255,0.6);
-    outline-offset: -5px;
+    border: 2.5px solid #c8b97a;
   }
-  /* Subtle inner border effect using box-shadow */
   .chip-num::before {
     content: '';
     position: absolute;
@@ -235,63 +228,123 @@ if ('serviceWorker' in navigator) {
     border-radius: 4px;
     pointer-events: none;
   }
-
-  /* Per-card colours matching the actual Flip 7 deck */
-  .chip-n0  { color: #888; }
-  .chip-n1  { color: #e74c3c; }
-  .chip-n2  { color: #e67e22; }
-  .chip-n3  { color: #f1c40f; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-  .chip-n4  { color: #2ecc71; }
-  .chip-n5  { color: #1abc9c; }
-  .chip-n6  { color: #3498db; }
-  .chip-n7  { color: #9b59b6; font-size: 1.45rem; }
-  .chip-n8  { color: #e91e63; }
-  .chip-n9  { color: #ff5722; }
-  .chip-n10 { color: #2980b9; }
-  .chip-n11 { color: #8e44ad; }
-  .chip-n12 { color: #c0392b; }
-
-  /* Duplicate = red card, bust indicator */
-  .chip-num.dup {
-    background: #c0392b;
-    border-color: #922b21;
-    color: white;
-    outline-color: rgba(255,255,255,0.3);
-  }
-  .chip-num.dup::before { border-color: rgba(255,255,255,0.25); }
-
-  /* Flip 7 card — gold/rainbow special */
-  .chip-n7 {
-    background: linear-gradient(160deg, #fff9e6 0%, #fef3c7 50%, #fff9e6 100%);
-    border-color: #c9a84c;
-    box-shadow: 0 3px 10px rgba(201,168,76,0.5);
-  }
-
-  /* Action cards — pill shape, matching real card colours */
-  .chip-action {
-    height: 30px; padding: 0 9px;
-    font-size: 0.68rem; font-family: 'Lilita One', cursive;
-    letter-spacing: 0.03em; border-radius: 6px;
-    border: 1.5px solid rgba(255,255,255,0.25);
-  }
-  .chip-freeze { background: #2471a3; color: white; border-color: #1a5276; }
-  .chip-flip3  { background: #d4a017; color: #3d2b00; border-color: #b8860b; }
-  .chip-sc     { background: #cb4335; color: white; border-color: #922b21; }
-
-  /* Modifier cards — orange matching real game, card proportions */
-  .chip-mod {
-    width: 40px; height: 54px;
+  .chip-num .chip-main {
     font-family: 'Lilita One', cursive;
-    font-size: 0.95rem; border-radius: 7px;
-    border: 2px solid rgba(255,255,255,0.2);
-    flex-direction: column;
+    font-size: 1.35rem;
+    line-height: 1;
+    margin-bottom: 1px;
   }
-  .chip-plus { background: linear-gradient(160deg, #e67e22, #d35400); color: white; }
-  .chip-x2   {
-    background: linear-gradient(160deg, #e67e22, #d35400); color: white;
+  .chip-num .chip-label {
+    font-size: 0.38rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #5a4a2a;
+    opacity: 0.55;
+    font-family: 'Inter', sans-serif;
+  }
+  .chip-num .chip-pip-tl,
+  .chip-num .chip-pip-br {
+    position: absolute;
+    font-family: 'Lilita One', cursive;
+    font-size: 0.55rem;
+    opacity: 0.6;
+  }
+  .chip-num .chip-pip-tl { top: 3px; left: 4px; }
+  .chip-num .chip-pip-br { bottom: 3px; right: 4px; transform: rotate(180deg); }
+
+  /* Per-card colours */
+  .chip-n0  .chip-main, .chip-n0  .chip-pip-tl, .chip-n0  .chip-pip-br { color: #999; }
+  .chip-n1  .chip-main, .chip-n1  .chip-pip-tl, .chip-n1  .chip-pip-br { color: #e74c3c; }
+  .chip-n2  .chip-main, .chip-n2  .chip-pip-tl, .chip-n2  .chip-pip-br { color: #e67e22; }
+  .chip-n3  .chip-main, .chip-n3  .chip-pip-tl, .chip-n3  .chip-pip-br { color: #e6b800; }
+  .chip-n4  .chip-main, .chip-n4  .chip-pip-tl, .chip-n4  .chip-pip-br { color: #27ae60; }
+  .chip-n5  .chip-main, .chip-n5  .chip-pip-tl, .chip-n5  .chip-pip-br { color: #1abc9c; }
+  .chip-n6  .chip-main, .chip-n6  .chip-pip-tl, .chip-n6  .chip-pip-br { color: #3498db; }
+  .chip-n7  .chip-main, .chip-n7  .chip-pip-tl, .chip-n7  .chip-pip-br { color: #9b59b6; }
+  .chip-n8  .chip-main, .chip-n8  .chip-pip-tl, .chip-n8  .chip-pip-br { color: #e91e63; }
+  .chip-n9  .chip-main, .chip-n9  .chip-pip-tl, .chip-n9  .chip-pip-br { color: #ff5722; }
+  .chip-n10 .chip-main, .chip-n10 .chip-pip-tl, .chip-n10 .chip-pip-br { color: #2471a3; }
+  .chip-n11 .chip-main, .chip-n11 .chip-pip-tl, .chip-n11 .chip-pip-br { color: #7d3c98; }
+  .chip-n12 .chip-main, .chip-n12 .chip-pip-tl, .chip-n12 .chip-pip-br { color: #c0392b; }
+
+  /* 7 — gold special */
+  .chip-n7 {
+    background: linear-gradient(160deg, #fff9e6 0%, #fef3c7 60%, #fff9e6 100%);
+    border-color: #c9a84c;
+    box-shadow: 0 3px 12px rgba(201,168,76,0.55);
+  }
+  .chip-n7 .chip-main { font-size: 1.5rem; }
+
+  /* Bust */
+  .chip-num.dup {
+    background: #c0392b; border-color: #7b241c;
+  }
+  .chip-num.dup::before { border-color: rgba(255,255,255,0.2); }
+  .chip-num.dup .chip-main,
+  .chip-num.dup .chip-pip-tl,
+  .chip-num.dup .chip-pip-br { color: white !important; }
+  .chip-num.dup .chip-label { color: rgba(255,255,255,0.7); }
+
+  /* Action cards */
+  .chip-action {
+    width: 42px; height: 56px;
+    font-family: 'Lilita One', cursive;
+    border: 2.5px solid rgba(255,255,255,0.2);
+  }
+  .chip-action::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+  }
+  .chip-action .chip-icon { font-size: 1.1rem; margin-bottom: 3px; }
+  .chip-action .chip-main {
+    font-family: 'Lilita One', cursive;
+    font-size: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-align: center;
+    padding: 0 3px;
+    line-height: 1.3;
+  }
+  .chip-freeze { background: linear-gradient(160deg, #2980b9, #1a5276); color: white; border-color: #1a5276; }
+  .chip-flip3  { background: linear-gradient(160deg, #f39c12, #d68910); color: #3d2b00; border-color: #b8860b; }
+  .chip-sc     { background: linear-gradient(160deg, #e74c3c, #c0392b); color: white; border-color: #922b21; }
+
+  /* Modifier cards */
+  .chip-mod {
+    width: 42px; height: 56px;
+    background: linear-gradient(160deg, #e67e22, #ca6f1e, #d35400);
+    border: 2.5px solid rgba(255,255,255,0.25);
+    color: white;
+  }
+  .chip-mod::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+  }
+  .chip-mod .chip-main {
+    font-family: 'Lilita One', cursive;
     font-size: 1.1rem;
-    border: 2px solid rgba(255,255,255,0.3);
+    line-height: 1;
+    margin-bottom: 2px;
+    color: white;
   }
+  .chip-mod .chip-label {
+    font-size: 0.36rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.75;
+    font-family: 'Inter', sans-serif;
+    text-align: center;
+    padding: 0 2px;
+    line-height: 1.3;
+    color: white;
+  }
+  .chip-x2 .chip-main { font-size: 1.25rem; }
 
   /* Bust / flip7 messages */
   .f7-status-msg { text-align: center; padding: 6px 0 8px; font-family: 'Playfair Display', serif; font-size: 0.95rem; font-weight: 700; }
@@ -1413,27 +1466,35 @@ function f7Render() {
   document.getElementById('f7-score-breakdown').textContent = bdText;
 
   // Hand chips
+  var NUM_NAMES = ['Zero','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve'];
   var handEl = document.getElementById('f7-hand');
   handEl.innerHTML = '';
   h.numCards.forEach(function(v, idx) {
     var isDup = h.numCards.indexOf(v) !== idx;
     var chip = document.createElement('div');
     chip.className = 'chip chip-num chip-n'+v + (isDup?' dup':'');
-    chip.textContent = v;
+    chip.innerHTML =
+      '<span class="chip-pip-tl">'+v+'</span>' +
+      '<span class="chip-main">'+v+'</span>' +
+      '<span class="chip-label">'+(NUM_NAMES[v]||v)+'</span>' +
+      '<span class="chip-pip-br">'+v+'</span>';
     handEl.appendChild(chip);
   });
   h.actionCards.forEach(function(id) {
     var chip = document.createElement('div');
-    var label = id==='sc'?(h.hasScUsed?'SC used':'SC'):id==='freeze'?'Freeze':'Flip 3';
+    var icon  = id==='sc'?'🛡':id==='freeze'?'🔒':'🔄';
+    var label = id==='sc'?'Second Chance':id==='freeze'?'Freeze':'Flip Three';
     var cls   = id==='sc'?'chip-sc':id==='freeze'?'chip-freeze':'chip-flip3';
     chip.className = 'chip chip-action '+cls;
-    chip.textContent = label;
+    chip.innerHTML = '<span class="chip-icon">'+icon+'</span><span class="chip-main">'+label+'</span>';
     handEl.appendChild(chip);
   });
   h.modCards.forEach(function(id) {
     var chip = document.createElement('div');
+    var val = id==='x2'?'×2':id.replace('p','+');
+    var sub = id==='x2'?'doubles nums':'add to total';
     chip.className = 'chip chip-mod '+(id==='x2'?'chip-x2':'chip-plus');
-    chip.textContent = id==='x2'?'×2':id.replace('p','+');
+    chip.innerHTML = '<span class="chip-main">'+val+'</span><span class="chip-label">'+sub+'</span>';
     handEl.appendChild(chip);
   });
 
