@@ -70,7 +70,7 @@ if ('serviceWorker' in navigator) {
 })();
 </script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600&family=Courier+Prime:wght@400;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600&family=Courier+Prime:wght@400;700&family=Lilita+One&display=swap');
 
   :root {
     --felt: #1a3a2a;
@@ -206,21 +206,92 @@ if ('serviceWorker' in navigator) {
   .f7-hand-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(245,240,232,0.35); margin-bottom: 6px; }
   .f7-hand { display: flex; flex-wrap: wrap; gap: 5px; min-height: 42px; }
 
-  /* Individual card chips */
+  /* ── FLIP 7 CARD CHIPS ── */
+  /* Each number card has its own colour matching the real game */
   .chip {
     display: flex; align-items: center; justify-content: center;
-    border-radius: 6px; font-family: 'Courier Prime', monospace;
-    font-weight: 700; box-shadow: 0 2px 4px rgba(0,0,0,0.3); flex-shrink: 0;
+    border-radius: 6px; flex-shrink: 0; position: relative;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.4);
   }
-  .chip-num  { width: 36px; height: 48px; font-size: 1rem; background: var(--cream); color: var(--text-dark); }
-  .chip-num.dup { background: var(--red); color: white; }
-  .chip-action { height: 28px; padding: 0 8px; font-size: 0.72rem; font-family: 'Inter', sans-serif; font-weight: 700; letter-spacing: 0.02em; }
-  .chip-freeze { background: var(--blue); color: white; }
-  .chip-flip3  { background: var(--purple); color: white; }
-  .chip-sc     { background: var(--green); color: white; }
-  .chip-mod    { height: 28px; padding: 0 8px; font-size: 0.78rem; font-family: 'Courier Prime', monospace; font-weight: 700; }
-  .chip-plus   { background: #16a085; color: white; }
-  .chip-x2     { background: #d35400; color: white; }
+
+  /* Number cards — parchment style with coloured number and double border */
+  .chip-num {
+    width: 40px; height: 54px;
+    background: #f5eedc;
+    border: 2px solid #c8b97a;
+    border-radius: 7px;
+    font-family: 'Lilita One', cursive;
+    font-size: 1.3rem;
+    flex-direction: column;
+    outline: 3px solid rgba(255,255,255,0.6);
+    outline-offset: -5px;
+  }
+  /* Subtle inner border effect using box-shadow */
+  .chip-num::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1.5px solid rgba(184,163,100,0.5);
+    border-radius: 4px;
+    pointer-events: none;
+  }
+
+  /* Per-card colours matching the actual Flip 7 deck */
+  .chip-n0  { color: #888; }
+  .chip-n1  { color: #e74c3c; }
+  .chip-n2  { color: #e67e22; }
+  .chip-n3  { color: #f1c40f; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+  .chip-n4  { color: #2ecc71; }
+  .chip-n5  { color: #1abc9c; }
+  .chip-n6  { color: #3498db; }
+  .chip-n7  { color: #9b59b6; font-size: 1.45rem; }
+  .chip-n8  { color: #e91e63; }
+  .chip-n9  { color: #ff5722; }
+  .chip-n10 { color: #2980b9; }
+  .chip-n11 { color: #8e44ad; }
+  .chip-n12 { color: #c0392b; }
+
+  /* Duplicate = red card, bust indicator */
+  .chip-num.dup {
+    background: #c0392b;
+    border-color: #922b21;
+    color: white;
+    outline-color: rgba(255,255,255,0.3);
+  }
+  .chip-num.dup::before { border-color: rgba(255,255,255,0.25); }
+
+  /* Flip 7 card — gold/rainbow special */
+  .chip-n7 {
+    background: linear-gradient(160deg, #fff9e6 0%, #fef3c7 50%, #fff9e6 100%);
+    border-color: #c9a84c;
+    box-shadow: 0 3px 10px rgba(201,168,76,0.5);
+  }
+
+  /* Action cards — pill shape, matching real card colours */
+  .chip-action {
+    height: 30px; padding: 0 9px;
+    font-size: 0.68rem; font-family: 'Lilita One', cursive;
+    letter-spacing: 0.03em; border-radius: 6px;
+    border: 1.5px solid rgba(255,255,255,0.25);
+  }
+  .chip-freeze { background: #2471a3; color: white; border-color: #1a5276; }
+  .chip-flip3  { background: #d4a017; color: #3d2b00; border-color: #b8860b; }
+  .chip-sc     { background: #cb4335; color: white; border-color: #922b21; }
+
+  /* Modifier cards — orange matching real game, card proportions */
+  .chip-mod {
+    width: 40px; height: 54px;
+    font-family: 'Lilita One', cursive;
+    font-size: 0.95rem; border-radius: 7px;
+    border: 2px solid rgba(255,255,255,0.2);
+    flex-direction: column;
+  }
+  .chip-plus { background: linear-gradient(160deg, #e67e22, #d35400); color: white; }
+  .chip-x2   {
+    background: linear-gradient(160deg, #e67e22, #d35400); color: white;
+    font-size: 1.1rem;
+    border: 2px solid rgba(255,255,255,0.3);
+  }
 
   /* Bust / flip7 messages */
   .f7-status-msg { text-align: center; padding: 6px 0 8px; font-family: 'Playfair Display', serif; font-size: 0.95rem; font-weight: 700; }
@@ -553,7 +624,8 @@ if ('serviceWorker' in navigator) {
     .action-btn  { min-height: 54px; font-size: 0.9rem; padding: 12px 16px; border-radius: 10px; }
     .f7-big-score { font-size: 3.5rem; }
     .f7-hand { gap: 7px; min-height: 60px; }
-    .chip-num { width: 46px; height: 62px; font-size: 1.2rem; border-radius: 8px; }
+    .chip-num { width: 50px; height: 68px; font-size: 1.5rem; border-radius: 9px; }
+    .chip-mod { width: 50px; height: 68px; font-size: 1.1rem; }
     .f7-turn-panel { padding: 20px 18px; }
 
     /* ── YAHTZEE iPad layout ── */
@@ -1346,7 +1418,7 @@ function f7Render() {
   h.numCards.forEach(function(v, idx) {
     var isDup = h.numCards.indexOf(v) !== idx;
     var chip = document.createElement('div');
-    chip.className = 'chip chip-num' + (isDup?' dup':'');
+    chip.className = 'chip chip-num chip-n'+v + (isDup?' dup':'');
     chip.textContent = v;
     handEl.appendChild(chip);
   });
@@ -1429,10 +1501,14 @@ function f7Render() {
   numGrid.innerHTML = '';
   var heldSet = {};
   h.numCards.forEach(function(v){ heldSet[v]=(heldSet[v]||0)+1; });
+  var CARD_COLOURS = ['#888','#e74c3c','#e67e22','#f1c40f','#2ecc71','#1abc9c','#3498db','#9b59b6','#e91e63','#ff5722','#2980b9','#8e44ad','#c0392b'];
   for (var n=0; n<=12; n++) {
     var btn = document.createElement('button');
     btn.className = 'num-btn' + (heldSet[n]?' held':'');
-    btn.innerHTML = n+'<span class="card-count">×'+DECK_COUNTS[n]+'</span>';
+    btn.style.borderTopColor = CARD_COLOURS[n];
+    btn.style.borderTopWidth = '3px';
+    btn.style.color = heldSet[n] ? 'rgba(245,240,232,0.25)' : CARD_COLOURS[n];
+    btn.innerHTML = '<span style="font-family:\'Lilita One\',cursive;font-size:1rem">'+n+'</span><span class="card-count">×'+DECK_COUNTS[n]+'</span>';
     btn.disabled = isDone;
     btn.addEventListener('click', (function(val){ return function(){ f7DrawNum(val); }; })(n));
     numGrid.appendChild(btn);
