@@ -304,7 +304,22 @@ if ('serviceWorker' in navigator) {
   .btn-p10     { border-color: #16a085; background: rgba(22,160,133,0.15); color: #1abc9c; }
   .btn-x2      { border-color: #d35400; background: rgba(211,84,0,0.15);   color: #e67e22; }
 
-  /* ── TURN ACTIONS ── */
+  .btn-bust-round {
+    width: 100%; padding: 14px; margin-top: 8px;
+    background: rgba(192,57,43,0.2); border: 1.5px solid var(--red);
+    border-radius: 10px; color: #e74c3c;
+    font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700;
+    -webkit-appearance: none;
+  }
+  .btn-bust-round:active { background: rgba(192,57,43,0.4); }
+  .f7-mode-btn {
+    flex: 1; padding: 12px 8px; border: 2px solid var(--felt-border);
+    background: rgba(0,0,0,0.15); color: var(--cream);
+    border-radius: 10px; text-align: center; cursor: pointer;
+    -webkit-appearance: none; transition: all 0.15s;
+  }
+  .f7-mode-btn.active { border-color: var(--gold); background: rgba(201,168,76,0.12); color: var(--gold-light); }
+  .f7-mode-btn:active { opacity: 0.75; }
   .f7-turn-actions { display: flex; gap: 7px; margin-bottom: 8px; }
   .btn-stop {
     flex: 1; padding: 12px 6px; min-height: 48px;
@@ -606,6 +621,21 @@ if ('serviceWorker' in navigator) {
       <div class="player-list" id="f7-player-list"></div>
       <button class="btn-add" onclick="f7AddPlayer()">+ Add player</button>
     </div>
+    <div class="setup-card">
+      <h2>Mode</h2>
+      <div style="display:flex;gap:8px">
+        <button class="f7-mode-btn active" id="f7-mode-card" onclick="f7SetMode('card')">
+          <div style="font-size:1.2rem;margin-bottom:4px">🃏</div>
+          <div style="font-weight:700;font-size:0.85rem">Card by Card</div>
+          <div style="font-size:0.7rem;opacity:0.55;margin-top:3px">Live tracking as you draw</div>
+        </button>
+        <button class="f7-mode-btn" id="f7-mode-round" onclick="f7SetMode('round')">
+          <div style="font-size:1.2rem;margin-bottom:4px">📋</div>
+          <div style="font-weight:700;font-size:0.85rem">Per Round</div>
+          <div style="font-size:0.7rem;opacity:0.55;margin-top:3px">Enter results after each round</div>
+        </button>
+      </div>
+    </div>
     <button class="btn-primary" onclick="f7Start()">Start Game</button>
     <p class="hint">3–8 players · drag to reorder · first to 200 wins</p>
   </div>
@@ -615,6 +645,7 @@ if ('serviceWorker' in navigator) {
     <div class="f7-topbar">
       <span>Round <span class="rnd" id="f7-rnd">1</span></span>
       <span id="f7-topbar-sub" style="color:rgba(245,240,232,0.4)"></span>
+      <span id="f7-mode-label" style="font-size:0.68rem;color:rgba(245,240,232,0.3);border:1px solid rgba(245,240,232,0.15);padding:2px 7px;border-radius:5px;"></span>
       <button class="btn-ghost" onclick="f7ResetGame()">New game</button>
     </div>
 
@@ -662,6 +693,7 @@ if ('serviceWorker' in navigator) {
         <button class="btn-undo" id="f7-undo" onclick="f7Undo()" disabled>↩</button>
         <button class="btn-stop" id="f7-stop" onclick="f7StopPlayer()">🏦 Stop &amp; Bank</button>
       </div>
+      <button class="btn-bust-round hidden" id="f7-bust-btn" onclick="f7BustPlayer()">💥 Bust</button>
       <button class="btn-next-player hidden" id="f7-next-player" onclick="f7NextPlayer()">Next →</button>
       <button class="btn-end-round hidden" id="f7-end-round" onclick="f7ConfirmRound()">✓ End Round &amp; Tally Scores</button>
     </div>
@@ -831,11 +863,12 @@ var f7 = {
   totalScores: {},
   round: 1,
   history: [],
+  mode: 'card',      // 'card' = live card-by-card | 'round' = per-round entry
   hands: {},
   viewIdx: 0,
   pendingAction: null,
   pendingGiver: null,
-  flip3ReturnToIdx: null, // after flip3 recipient finishes, return here
+  flip3ReturnToIdx: null,
 };
 
 /* ── Pure helpers operating on a hand object ── */
@@ -994,6 +1027,12 @@ function f7RemovePlayer(i) {
   f7RebuildSetup();
 }
 
+function f7SetMode(mode) {
+  f7.mode = mode;
+  document.getElementById('f7-mode-card').classList.toggle('active', mode === 'card');
+  document.getElementById('f7-mode-round').classList.toggle('active', mode === 'round');
+}
+
 function f7Start() {
   var inputs = document.querySelectorAll('#f7-player-list .player-input');
   f7.players = Array.prototype.map.call(inputs, function(inp){ return inp.value.trim()||'Player'; });
@@ -1068,21 +1107,26 @@ function f7DrawNum(val) {
     return;
   }
 
-  // Flip 3 in progress
-  if (h.flip3Left > 0) {
+  // Flip 3 in progress (card mode only)
+  if (f7.mode === 'card' && h.flip3Left > 0) {
     h.flip3Left--;
     if (h.flip3Left === 0) {
       f7Render();
       f7NextPlayer();
       return;
     }
-    f7Render(); // still more forced draws
+    f7Render();
     return;
   }
 
-  // Normal draw — auto-advance
-  f7Render();
-  f7NextPlayer();
+  // Card mode: auto-advance after normal draw
+  // Per-round mode: stay on this player so they can enter all their cards
+  if (f7.mode === 'card') {
+    f7Render();
+    f7NextPlayer();
+  } else {
+    f7Render();
+  }
 }
 
 function f7DrawMod(id) {
@@ -1091,7 +1135,7 @@ function f7DrawMod(id) {
   if (id === 'x2' && h.modCards.indexOf('x2') !== -1) return;
   h.modCards.push(id);
   f7Render();
-  f7NextPlayer();
+  if (f7.mode === 'card') f7NextPlayer();
 }
 
 function f7DrawAction(id) {
@@ -1103,9 +1147,9 @@ function f7DrawAction(id) {
     h.hasSC = true;
     h.actionCards.push('sc');
     f7Render();
-    f7NextPlayer();
+    if (f7.mode === 'card') f7NextPlayer();
   } else if (id === 'freeze' || id === 'flip3') {
-    // These need target selection — don't auto-advance
+    // Only available in card mode
     f7.pendingAction = id;
     f7.pendingGiver  = f7CurrentName();
     f7Render();
@@ -1188,7 +1232,18 @@ function f7StopPlayer() {
   var hasAny = h.numCards.length > 0 || h.modCards.length > 0 || h.actionCards.length > 0;
   if (!hasAny) return;
   h.status = 'stopped';
-  // Don't auto-advance — show the banked score briefly, user taps Next →
+  f7Render();
+}
+
+// Per-round mode: one-tap bust, clears any partial card entry
+function f7BustPlayer() {
+  var h = f7CurrentHand();
+  if (!handIsActive(h)) return;
+  h.numCards = [];
+  h.modCards = [];
+  h.actionCards = [];
+  h.hasSC = false;
+  h.status = 'bust';
   f7Render();
 }
 
@@ -1245,6 +1300,8 @@ function f7Render() {
   document.getElementById('f7-rnd').textContent = f7.round;
   var activeCount = f7.players.filter(function(p){ return handIsActive(f7.hands[p]); }).length;
   document.getElementById('f7-topbar-sub').textContent = activeCount + ' player' + (activeCount!==1?'s':'') + ' still drawing';
+  var modeLabel = document.getElementById('f7-mode-label');
+  if (modeLabel) modeLabel.textContent = f7.mode === 'round' ? 'Per Round' : 'Card by Card';
 
   // Score display — calculate first so stateLabel can reference it
   var isBust   = h.status === 'bust';
@@ -1388,6 +1445,10 @@ function f7Render() {
     var btn = document.createElement('button');
     btn.className = 'action-btn '+card.cls;
     btn.textContent = card.label;
+    // Hide Freeze and Flip Three in per-round mode
+    if (f7.mode === 'round' && (card.id === 'freeze' || card.id === 'flip3')) {
+      btn.style.display = 'none';
+    }
     var dis = isDone || (card.id==='sc' && h.hasSC);
     btn.disabled = dis;
     btn.addEventListener('click', (function(id){ return function(){ f7DrawAction(id); }; })(card.id));
@@ -1429,13 +1490,27 @@ function f7Render() {
     nextBtn.textContent = 'Next Player →';
     endRoundEl.classList.remove('hidden');
     endRoundEl.textContent = '⏹ End Round';
+  } else if (f7.mode === 'round') {
+    // Per-round mode: show Bust button + Next Player, hide Stop & Bank
+    var bustBtn = document.getElementById('f7-bust-btn');
+    if (bustBtn) bustBtn.classList.remove('hidden');
+    nextBtn.classList.remove('hidden');
+    nextBtn.textContent = '✓ Done — Next Player →';
+    endRoundEl.classList.remove('hidden');
+    endRoundEl.textContent = '⏹ End Round';
+    // Undo still useful
+    actionsEl.classList.remove('hidden');
+    stopBtn.style.display = 'none';
+    undoBtn.disabled = !(h.numCards.length > 0 || h.modCards.length > 0 || h.actionCards.length > 0);
   } else {
-    // Active player
+    // Card mode
+    var bustBtnC = document.getElementById('f7-bust-btn');
+    if (bustBtnC) bustBtnC.classList.add('hidden');
     actionsEl.classList.remove('hidden');
     nextBtn.classList.remove('hidden');
     endRoundEl.classList.remove('hidden');
     endRoundEl.textContent = '⏹ End Round';
-
+    stopBtn.style.display = '';
     var hasAny = h.numCards.length > 0 || h.modCards.length > 0 || h.actionCards.length > 0;
     undoBtn.disabled = !hasAny;
     stopBtn.disabled = !hasAny;
