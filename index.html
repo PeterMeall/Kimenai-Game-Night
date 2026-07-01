@@ -376,8 +376,8 @@ if ('serviceWorker' in navigator) {
   .score-cell.filled  { background: #f9f7f2; cursor: pointer; }
   .score-cell.filled:active { background: #ede8db; }
   .score-cell.zero    { color: rgba(0,0,0,0.22); }
-  .score-cell.cur-col { background: rgba(201,168,76,0.18); }
-  .score-cell.cur-col.filled { background: rgba(201,168,76,0.12); }
+  .score-cell.cur-col { background: rgba(201,168,76,0.18); border-color: rgba(201,168,76,0.35) !important; }
+  .score-cell.cur-col.filled { background: rgba(201,168,76,0.12); border-color: rgba(201,168,76,0.3) !important; }
   .ytz-head th.cur-col-header { background: #3a3000; color: var(--gold-light); }
   .ytz-bonus-row td:first-child { font-size: 0.66rem; color: var(--text-mid); padding: 5px 6px 5px 11px; font-style: italic; background: #f5f0e8; }
   .ytz-bonus-row .score-cell { background: #f5f0e8; font-size: 0.76rem; color: var(--text-mid); cursor: default; }
@@ -1796,15 +1796,14 @@ function ytzCommit(val) {
     ytz.scores[p].yahtzee_bonus = (ytz.scores[p].yahtzee_bonus||0) + val;
   } else {
     ytz.scores[p][mState.catId] = val;
-    // Striking out Yahtzee at 0 also blocks the bonus row
     if (mState.catId === 'yahtzee' && val === 0) {
       ytz.scores[p].yahtzee_bonus = 0;
     }
   }
+  // Advance active player BEFORE refreshing so the highlight moves immediately
+  ytz.activePi = (mState.pi + 1) % ytz.players.length;
   ytzCloseModal();
   ytzRefresh();
-  ytz.activePi = (mState.pi+1) % ytz.players.length;
-  document.getElementById('m-confirm').style.display = '';
 }
 function ytzCloseModal() {
   document.getElementById('ytz-modal').classList.remove('open');
