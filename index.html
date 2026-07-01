@@ -376,7 +376,9 @@ if ('serviceWorker' in navigator) {
   .score-cell.filled  { background: #f9f7f2; cursor: pointer; }
   .score-cell.filled:active { background: #ede8db; }
   .score-cell.zero    { color: rgba(0,0,0,0.22); }
-  .score-cell.cur-col { background: #fffbe6; }
+  .score-cell.cur-col { background: rgba(201,168,76,0.18); }
+  .score-cell.cur-col.filled { background: rgba(201,168,76,0.12); }
+  .ytz-head th.cur-col-header { background: #3a3000; color: var(--gold-light); }
   .ytz-bonus-row td:first-child { font-size: 0.66rem; color: var(--text-mid); padding: 5px 6px 5px 11px; font-style: italic; background: #f5f0e8; }
   .ytz-bonus-row .score-cell { background: #f5f0e8; font-size: 0.76rem; color: var(--text-mid); cursor: default; }
   .ytz-total-row td:first-child { padding: 8px 6px 8px 11px; font-family: 'Playfair Display', serif; font-size: 0.8rem; color: var(--gold-light); font-weight: 700; background: #1a1a1a; }
@@ -699,7 +701,11 @@ if ('serviceWorker' in navigator) {
   </div>
 
   <div id="ytz-game" class="hidden">
-    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;margin-top:2px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;margin-top:2px">
+      <div id="ytz-active-banner" style="display:flex;align-items:center;gap:9px;background:var(--felt-light);border:1.5px solid var(--gold);border-radius:10px;padding:10px 14px;flex:1;margin-right:10px">
+        <span style="font-size:0.7rem;color:rgba(245,240,232,0.45);text-transform:uppercase;letter-spacing:0.07em;">Now scoring</span>
+        <span id="ytz-active-name" style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--gold-light);"></span>
+      </div>
       <button class="btn-ghost" onclick="ytzResetGame()" style="border:1px solid var(--felt-border);padding:7px 10px;border-radius:7px;">New game</button>
     </div>
     <div class="ytz-scorecard"><table id="ytz-table"></table></div>
@@ -1703,13 +1709,13 @@ function ytzBuildTable() {
 }
 
 function ytzCellTap(catId, pi) {
-  var p = ytz.players[pi];
-  // Allow tapping filled cells to correct them
   ytz.activePi = pi;
+  ytzRefresh();
   ytzOpenModal(catId, pi, false);
 }
 function ytzBonusTap(pi) {
   ytz.activePi = pi;
+  ytzRefresh();
   ytzOpenModal('yahtzee', pi, true);
 }
 
@@ -1813,13 +1819,26 @@ function ytzGrandTotal(p) {
   return up + (up>=63?35:0) + low + (ytz.scores[p].yahtzee_bonus||0);
 }
 function ytzRefresh() {
+  // Update active player banner
+  var activeName = document.getElementById('ytz-active-name');
+  if (activeName) {
+    activeName.innerHTML = '<span class="cdot" style="background:'+COLOURS[ytz.activePi%8]+'"></span>' + ytz.players[ytz.activePi];
+  }
+  // Highlight active column header
+  var headerCells = document.querySelectorAll('#ytz-table thead th');
+  headerCells.forEach(function(th, i) {
+    if (i === 0) return;
+    th.classList.toggle('cur-col-header', (i-1) === ytz.activePi);
+  });
+
   ytz.players.forEach(function(p,pi) {
+    var isActive = pi === ytz.activePi;
     YTZ_CATS.forEach(function(cat) {
       var cell = document.getElementById('sc-'+cat.id+'-'+pi);
       if (!cell) return;
       var v = ytz.scores[p][cat.id];
-      cell.className = 'score-cell';
-      if (v===null) { cell.textContent=''; if(pi===ytz.activePi) cell.classList.add('cur-col'); }
+      cell.className = 'score-cell' + (isActive ? ' cur-col' : '');
+      if (v===null) { cell.textContent=''; }
       else { cell.textContent=v; cell.classList.add('filled'); if(v===0) cell.classList.add('zero'); }
     });
     var up=ytzUpperTotal(p);
@@ -1832,7 +1851,7 @@ function ytzRefresh() {
       if (yahtzeeStruck) {
         ybCell.textContent = '✗';
         ybCell.style.color = 'rgba(0,0,0,0.2)';
-        ybCell.onclick = null; // can't tap when struck out
+        ybCell.onclick = null;
       } else {
         ybCell.textContent = yb > 0 ? '+'+yb : '';
         ybCell.style.color = '';
